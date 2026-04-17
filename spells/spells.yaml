@@ -1,0 +1,274 @@
+# =============================================================================
+# Sequence Engine — Configuration
+# =============================================================================
+#
+# Each sequence defines an ordered list of key presses that trigger an action.
+# Keys must be pressed within the time window defined in settings.
+#
+# Longer sequences take priority over shorter ones.
+# Example: pressing KEY_F13 twice triggers "all_lights_off", not "lights_on"
+# twice — because the two-key sequence is checked first.
+#
+# Available key names:
+#   KEY_F1  – KEY_F12   Standard function keys
+#   KEY_F13 – KEY_F24   Extended function keys (recommended — no app conflicts)
+#   KEY_UP  KEY_DOWN  KEY_LEFT  KEY_RIGHT
+#   KEY_ENTER  KEY_ESC  KEY_SPACE  KEY_TAB
+#
+# Run  python3 spells.py --list  to see all currently defined sequences.
+#
+# Available built-in actions:
+#   print        Just prints a message. Params: message (str)
+#   shell        Runs a shell command.  Params: command (str)
+#   http_get     HTTP GET request.      Params: url (str)
+#   http_post    HTTP POST (JSON).      Params: url (str), body (dict), headers (dict)
+#   mqtt_publish MQTT publish.          Params: topic (str), payload, broker, port
+#
+# For Home Assistant, use http_post with the HA REST API.
+# For anything else, use shell or register a custom handler in spells.py.
+# =============================================================================
+
+settings:
+  window_seconds: 2.0   # max seconds between key presses in a sequence
+  max_length: 6         # max number of keys in a sequence
+
+
+# -----------------------------------------------------------------------------
+# Key mapping used when pairing with ir_learn.py
+#
+# This section is documentation only — the key names here must match
+# what you assigned during pairing. Adjust to match your remote layout.
+#
+# Example layout for a typical TV remote:
+#   KEY_F13  →  Power button
+#   KEY_F14  →  Volume Up
+#   KEY_F15  →  Volume Down
+#   KEY_F16  →  Mute
+#   KEY_F17  →  Channel Up / Next
+#   KEY_F18  →  Channel Down / Previous
+#   KEY_F19  →  OK / Select
+#   KEY_F20  →  Back / Return
+#   KEY_F21  →  Menu / Home
+# -----------------------------------------------------------------------------
+
+
+sequences:
+
+  # ---------------------------------------------------------------------------
+  # Single key presses
+  # These fire immediately when a single button is pressed.
+  # ---------------------------------------------------------------------------
+
+  - name: lights_on
+    keys: [KEY_F13]
+    action: http_post
+    description: "Turn on living room lights"
+    params:
+      url: "http://homeassistant.local:8123/api/services/light/turn_on"
+      headers:
+        Authorization: "Bearer YOUR_HA_TOKEN_HERE"
+        Content-Type: "application/json"
+      body:
+        entity_id: "light.living_room"
+
+  - name: lights_off
+    keys: [KEY_F16]
+    action: http_post
+    description: "Turn off living room lights"
+    params:
+      url: "http://homeassistant.local:8123/api/services/light/turn_off"
+      headers:
+        Authorization: "Bearer YOUR_HA_TOKEN_HERE"
+        Content-Type: "application/json"
+      body:
+        entity_id: "light.living_room"
+
+  - name: volume_up
+    keys: [KEY_F14]
+    action: shell
+    description: "Increase system volume"
+    params:
+      command: "amixer -D pulse sset Master 5%+"
+
+  - name: volume_down
+    keys: [KEY_F15]
+    action: shell
+    description: "Decrease system volume"
+    params:
+      command: "amixer -D pulse sset Master 5%-"
+
+  - name: mute_toggle
+    keys: [KEY_F16]
+    action: shell
+    description: "Toggle mute"
+    params:
+      command: "amixer -D pulse sset Master toggle"
+
+  - name: next_track
+    keys: [KEY_F17]
+    action: shell
+    description: "Next track (playerctl)"
+    params:
+      command: "playerctl next"
+
+  - name: prev_track
+    keys: [KEY_F18]
+    action: shell
+    description: "Previous track (playerctl)"
+    params:
+      command: "playerctl previous"
+
+  - name: play_pause
+    keys: [KEY_F19]
+    action: shell
+    description: "Play / pause"
+    params:
+      command: "playerctl play-pause"
+
+  # ---------------------------------------------------------------------------
+  # Two-key sequences
+  # Press two buttons in quick succession (within window_seconds).
+  # ---------------------------------------------------------------------------
+
+  - name: scene_movie
+    keys: [KEY_F13, KEY_F19]
+    action: http_post
+    description: "Activate movie scene — dim lights, lower blinds"
+    params:
+      url: "http://homeassistant.local:8123/api/services/scene/turn_on"
+      headers:
+        Authorization: "Bearer YOUR_HA_TOKEN_HERE"
+        Content-Type: "application/json"
+      body:
+        entity_id: "scene.movie_night"
+
+  - name: scene_reading
+    keys: [KEY_F13, KEY_F14]
+    action: http_post
+    description: "Activate reading scene — warm bright light"
+    params:
+      url: "http://homeassistant.local:8123/api/services/scene/turn_on"
+      headers:
+        Authorization: "Bearer YOUR_HA_TOKEN_HERE"
+        Content-Type: "application/json"
+      body:
+        entity_id: "scene.reading"
+
+  - name: vacuum_start
+    keys: [KEY_F20, KEY_F19]
+    action: http_post
+    description: "Start robot vacuum"
+    params:
+      url: "http://homeassistant.local:8123/api/services/vacuum/start"
+      headers:
+        Authorization: "Bearer YOUR_HA_TOKEN_HERE"
+        Content-Type: "application/json"
+      body:
+        entity_id: "vacuum.living_room"
+
+  - name: blinds_up
+    keys: [KEY_F17, KEY_F17]
+    action: http_post
+    description: "Raise all blinds"
+    params:
+      url: "http://homeassistant.local:8123/api/services/cover/open_cover"
+      headers:
+        Authorization: "Bearer YOUR_HA_TOKEN_HERE"
+        Content-Type: "application/json"
+      body:
+        entity_id: "cover.all_blinds"
+
+  - name: blinds_down
+    keys: [KEY_F18, KEY_F18]
+    action: http_post
+    description: "Lower all blinds"
+    params:
+      url: "http://homeassistant.local:8123/api/services/cover/close_cover"
+      headers:
+        Authorization: "Bearer YOUR_HA_TOKEN_HERE"
+        Content-Type: "application/json"
+      body:
+        entity_id: "cover.all_blinds"
+
+  - name: beamer_on
+    keys: [KEY_F21, KEY_F19]
+    action: shell
+    description: "Power on beamer via IR blaster"
+    params:
+      # ir_learn.py must first store the beamer power code as KEY_F13
+      command: "python3 /home/pi/ir_learn.py --send KEY_F13"
+
+  - name: beamer_hdmi1
+    keys: [KEY_F21, KEY_F14]
+    action: shell
+    description: "Switch beamer to HDMI 1"
+    params:
+      command: "python3 /home/pi/ir_learn.py --send KEY_F14"
+
+  - name: beamer_hdmi2
+    keys: [KEY_F21, KEY_F15]
+    action: shell
+    description: "Switch beamer to HDMI 2"
+    params:
+      command: "python3 /home/pi/ir_learn.py --send KEY_F15"
+
+  - name: presence_home
+    keys: [KEY_F20, KEY_F14]
+    action: mqtt_publish
+    description: "Set presence status to home"
+    params:
+      broker: "localhost"
+      topic: "home/presence"
+      payload: "home"
+
+  - name: presence_away
+    keys: [KEY_F20, KEY_F15]
+    action: mqtt_publish
+    description: "Set presence status to away"
+    params:
+      broker: "localhost"
+      topic: "home/presence"
+      payload: "away"
+
+  # ---------------------------------------------------------------------------
+  # Three-key sequences
+  # These require three buttons pressed in order — good for less-common actions
+  # that should not fire accidentally.
+  # ---------------------------------------------------------------------------
+
+  - name: goodnight
+    keys: [KEY_F16, KEY_F16, KEY_F16]
+    action: http_post
+    description: "Good night — all lights off, lock door, set heating back"
+    params:
+      url: "http://homeassistant.local:8123/api/services/scene/turn_on"
+      headers:
+        Authorization: "Bearer YOUR_HA_TOKEN_HERE"
+        Content-Type: "application/json"
+      body:
+        entity_id: "scene.goodnight"
+
+  - name: alarm_off
+    keys: [KEY_F20, KEY_F20, KEY_F19]
+    action: http_post
+    description: "Disarm security alarm"
+    params:
+      url: "http://homeassistant.local:8123/api/services/alarm_control_panel/alarm_disarm"
+      headers:
+        Authorization: "Bearer YOUR_HA_TOKEN_HERE"
+        Content-Type: "application/json"
+      body:
+        entity_id: "alarm_control_panel.home"
+        code: "1234"
+
+  - name: all_off
+    keys: [KEY_F13, KEY_F16, KEY_F16]
+    action: http_post
+    description: "Everything off — all lights, all media"
+    params:
+      url: "http://homeassistant.local:8123/api/services/homeassistant/turn_off"
+      headers:
+        Authorization: "Bearer YOUR_HA_TOKEN_HERE"
+        Content-Type: "application/json"
+      body:
+        entity_id: "group.all_lights"
